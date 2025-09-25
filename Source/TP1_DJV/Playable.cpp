@@ -2,27 +2,16 @@
 
 
 #include "Playable.h"
-#include "Components/BoxComponent.h"
-#include "EnhancedInputComponent.h"
+#include "InputMappingContext.h"
+#include "InputActionValue.h"
 #include "EnhancedInputSubsystems.h"
-#include "Components/CapsuleComponent.h"
+#include "EnhancedInputComponent.h"
 
 // Sets default values
 APlayable::APlayable()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+ 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	// Create BoxComponent and set as RootComponent for the Actor
-	BoxCollision = CreateDefaultSubobject<UCapsuleComponent>("BoxCollision");
-	RootComponent = BoxCollision;
-
-	// Create StaticMeshComponent and Attach to BoxComponent
-	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
-	StaticMesh->SetupAttachment(BoxCollision);
-
-	
-	
 
 }
 
@@ -33,22 +22,6 @@ void APlayable::BeginPlay()
 	
 }
 
-void APlayable::Move(const FInputActionValue& Value)
-{
-	// Console Log
-	UE_LOG(LogTemp, Warning, TEXT("Moving"));
-
-	
-	FVector2D Direction = Value.Get<FVector2D>();
-	
-	if (Direction.X)
-	{
-		FVector NormalizedDirection = FVector(Direction.X, Direction.Y, 0.0f).GetSafeNormal();
-
-		AddMovementInput(NormalizedDirection);
-	}
-}
-
 // Called every frame
 void APlayable::Tick(float DeltaTime)
 {
@@ -57,23 +30,59 @@ void APlayable::Tick(float DeltaTime)
 }
 
 // Called to bind functionality to input
-void APlayable::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+void APlayable::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	if (APlayerController* PlayerController = GetController<APlayerController>())
+	if ( APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if ( UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			// Ajouter le Input Mapping Context
-			InputSubsystem->AddMappingContext(InputMapping, 0);
+			Subsystem->AddMappingContext(InputMappingContext, 0);
 		}
 	}
 
-	if (UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	if (UEnhancedInputComponent* Input = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		Input->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayable::Move);
+		Input->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayable::MoveInput);
+		Input->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayable::LookInput);
+		
+	}
+}
+
+void APlayable::MoveInput(const FInputActionValue& Value)
+{
+
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		FRotator ControlRotation = Controller->GetControlRotation();
+
+		FRotator YawRotation(0, ControlRotation.Yaw, 0);
+
+		FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		FVector RightDirection   = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		
+		AddMovementInput(ForwardDirection, MovementVector.X);
+		AddMovementInput(RightDirection, MovementVector.Y);
 	}
 
-}	
+}
+
+void APlayable::LookInput(const FInputActionValue& Value)
+{
+	
+	
+	FVector2D LookAxisVector = Value.Get<FVector2D>();
+	
+	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Yellow,FString::Printf(TEXT("Look Vector: X=%.2f Y=%.2f"), LookAxisVector.X, LookAxisVector.Y));
+
+	if (Controller != nullptr)
+	{
+		AddControllerYawInput(LookAxisVector.X);
+
+		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
 

@@ -3,25 +3,22 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
 #include "InputActionValue.h"
+#include "GameFramework/Character.h"
 #include "Playable.generated.h"
 
 UCLASS()
-class TP1_DJV_API APlayable : public APawn
+class TP1_DJV_API APlayable : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
+	// Sets default values for this character's properties
 	APlayable();
-	
-	
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	void Move(const FInputActionValue& Value);
 
 public:	
 	// Called every frame
@@ -30,16 +27,18 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UPROPERTY(VisibleAnywhere)
-	class UCapsuleComponent* BoxCollision;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UStaticMeshComponent* StaticMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+protected:
+	UPROPERTY(EditAnywhere, Category="EnhancedInput")
+	class UInputMappingContext* InputMappingContext;
+	
+	UPROPERTY(EditAnywhere, Category="EnhancedInput")
 	class UInputAction* MoveAction;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* InputMapping;
-	
+	void MoveInput(const FInputActionValue& Value);
+
+	UPROPERTY(EditAnywhere, Category="EnhancedInput")
+	class UInputAction* LookAction;
+
+	void LookInput(const FInputActionValue& Value);
+
 };
