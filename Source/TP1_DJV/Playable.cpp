@@ -72,12 +72,8 @@ void APlayable::MoveInput(const FInputActionValue& Value)
 
 void APlayable::LookInput(const FInputActionValue& Value)
 {
-	
-	
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	
-	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Yellow,FString::Printf(TEXT("Look Vector: X=%.2f Y=%.2f"), LookAxisVector.X, LookAxisVector.Y));
-
 	if (Controller != nullptr)
 	{
 		AddControllerYawInput(LookAxisVector.X);
